@@ -32,12 +32,6 @@ class PolygonDataset(Dataset):
     def get_vec(self, idx):
         return self.vecs[idx]
 
-    def normalize_vector(self, vec):
-        length = np.linalg.norm(vec)
-        if length == 0:
-            return vec
-        return vec / length
-
     def make_each_dataset(self):
         # 각 꼭짓점의 각도를 무작위로 생성
         angles = np.sort(np.random.rand(self.num_vertices) * 2 * math.pi)
