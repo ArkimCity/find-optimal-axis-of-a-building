@@ -103,12 +103,6 @@ class CNN(nn.Module):
         x = self.fc2(x)
         return x
 
-# 모델 초기화
-model = CNN()
-
-# 손실 함수 및 옵티마이저 정의
-criterion = nn.MSELoss()  # 회귀 문제 사용할 손실 함수
-optimizer = optim.Adam(model.parameters(), lr=0.001)
 
 # PolygonDataset 인스턴스 시각화 함수
 def visualize_polygon_dataset(img_tensors, vecs, comparison_vecs, num_images=5):
@@ -129,6 +123,14 @@ def visualize_polygon_dataset(img_tensors, vecs, comparison_vecs, num_images=5):
 
         axes[i].axis('off')  # 축 레이블 제거
     plt.show()
+
+
+# 모델 초기화
+model = CNN()
+
+# 손실 함수 및 옵티마이저 정의
+criterion = nn.MSELoss()  # 회귀 문제 사용할 손실 함수
+optimizer = optim.Adam(model.parameters(), lr=0.001)
 
 # 데이터셋 인스턴스 생성
 dataset = PolygonDataset()
