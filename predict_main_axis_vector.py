@@ -16,12 +16,17 @@ np.random.seed(12)
 class PolygonDataset(Dataset):
     def __init__(self, num_samples=1024, num_vertices=6, img_size=32):
         self.num_samples = num_samples
+        self.num_test_samples = 128
         self.num_vertices = num_vertices
         self.img_size = img_size
         self.datasets = []
         self.vecs = []
 
-        self.make_datasets()
+        self.test_datasets = []
+        self.test_vecs = []
+
+        self.make_datasets(self.num_samples, is_test=False)
+        self.make_datasets(self.num_test_samples, is_test=True)
 
     def __len__(self):
         return self.num_samples
@@ -68,11 +73,16 @@ class PolygonDataset(Dataset):
         img_tensor = img_tensor.unsqueeze(0)  # 채널 차원 추가
         return img_tensor, vec
 
-    def make_datasets(self):
-        for _ in range(self.num_samples):
+    def make_datasets(self, num_samples, is_test):
+        for _ in range(num_samples):
             img_tensor, vec = self.make_each_dataset()
-            self.datasets.append(img_tensor)
-            self.vecs.append(vec)
+
+            if is_test:
+                self.test_datasets.append(img_tensor)
+                self.test_vecs.append(vec)
+            else:
+                self.datasets.append(img_tensor)
+                self.vecs.append(vec)
 
 # CNN 모델 정의
 class CNN(nn.Module):
@@ -101,16 +111,21 @@ criterion = nn.MSELoss()  # 회귀 문제 사용할 손실 함수
 optimizer = optim.Adam(model.parameters(), lr=0.001)
 
 # PolygonDataset 인스턴스 시각화 함수
-def visualize_polygon_dataset(dataset, num_images=5):
+def visualize_polygon_dataset(img_tensors, vecs, comparison_vecs, num_images=5):
+
     fig, axes = plt.subplots(1, num_images, figsize=(num_images * 3, 3))
+
     for i in range(num_images):
-        img_tensor = dataset[i]  # 데이터셋에서 이미지 텐서 가져오기
+        img_tensor = img_tensors[i]  # 데이터셋에서 이미지 텐서 가져오기
         img = img_tensor.squeeze().numpy()  # 채널 차원 제거 및 NumPy 배열로 변환
         axes[i].imshow(img, cmap='gray')  # 이미지 표시
 
         # 이미지 위에 선분으로 VEC를 표시
-        vec = dataset.get_vec(i)
-        axes[i].plot([0, vec[0] * 10], [0, vec[1] * 10], color='red')
+        vec = vecs[i]
+        axes[i].plot([0, vec[0] * img_tensor.size()[1]], [0, vec[1] * img_tensor.size()[1]], color='red')
+
+        comparison_vec = comparison_vecs[i]
+        axes[i].plot([0, comparison_vec[0] * img_tensor.size()[1]], [0, comparison_vec[1] * img_tensor.size()[1]], color='green')
 
         axes[i].axis('off')  # 축 레이블 제거
     plt.show()
@@ -120,7 +135,7 @@ dataset = PolygonDataset()
 batch_size = 128
 
 # 시각화 함수 호출
-visualize_polygon_dataset(dataset, num_images=10)
+visualize_polygon_dataset(dataset.datasets, dataset.vecs, dataset.vecs, num_images=10)
 
 # 데이터 및 라벨 불러오기
 dataloader = DataLoader(dataset, batch_size=batch_size, shuffle=False)
@@ -146,3 +161,11 @@ for epoch in range(num_epochs):
     print('[%d] loss: %.3f' %  (epoch + 1, running_loss / 100))
 
 print('Finished Training')
+
+# 테스트
+result_vecs = []
+for test_data in dataset.test_datasets:
+    result_vec = model(test_data)
+    result_vecs.append((float(result_vec[0][0]), float(result_vec[0][1])))
+
+visualize_polygon_dataset(dataset.test_datasets, result_vecs, dataset.test_vecs, num_images=10)
