@@ -135,7 +135,7 @@ dataset = PolygonDataset()
 batch_size = 128
 
 # 시각화 함수 호출
-visualize_polygon_dataset(dataset.datasets, dataset.vecs, dataset.vecs, num_images=10)
+# visualize_polygon_dataset(dataset.datasets, dataset.vecs, dataset.vecs, num_images=10)
 
 # 데이터 및 라벨 불러오기
 dataloader = DataLoader(dataset, batch_size=batch_size, shuffle=False)
