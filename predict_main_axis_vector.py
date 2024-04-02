@@ -8,17 +8,23 @@ from torch.utils.data import DataLoader, Dataset
 import numpy as np
 import matplotlib.pyplot as plt
 
+np.random.seed(12)
+
 # 가상의 데이터셋 생성
 class PolygonDataset(Dataset):
     def __init__(self, num_samples=1000, num_vertices=6, img_size=32):
         self.num_samples = num_samples
         self.num_vertices = num_vertices
         self.img_size = img_size
+        self.datasets = self.make_datasets()
 
     def __len__(self):
         return self.num_samples
 
     def __getitem__(self, idx):
+        return self.datasets[idx]
+
+    def make_each_dataset(self):
         # 각 꼭짓점의 각도를 무작위로 생성
         angles = np.sort(np.random.rand(self.num_vertices) * 2 * math.pi)
         radius = self.img_size / 2 - 1  # 원의 반지름 설정
@@ -45,6 +51,11 @@ class PolygonDataset(Dataset):
         img_tensor = torch.tensor(img, dtype=torch.float32)
         img_tensor = img_tensor.unsqueeze(0)  # 채널 차원 추가
         return img_tensor
+
+    def make_datasets(self):
+        return [
+            self.make_each_dataset() for _ in range(self.num_samples)
+        ]
 
 # CNN 모델 정의
 class CNN(nn.Module):
