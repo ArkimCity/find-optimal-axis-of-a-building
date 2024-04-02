@@ -1,28 +1,36 @@
 import cv2
 import math
+import numpy as np
+import matplotlib.pyplot as plt
+from shapely.geometry import Polygon
+
 import torch
 import torch.nn as nn
 import torch.optim as optim
 import torchvision.transforms as transforms
 from torch.utils.data import DataLoader, Dataset
-import numpy as np
-import matplotlib.pyplot as plt
 
 np.random.seed(12)
 
 # 가상의 데이터셋 생성
 class PolygonDataset(Dataset):
-    def __init__(self, num_samples=1000, num_vertices=6, img_size=32):
+    def __init__(self, num_samples=1024, num_vertices=6, img_size=32):
         self.num_samples = num_samples
         self.num_vertices = num_vertices
         self.img_size = img_size
-        self.datasets = self.make_datasets()
+        self.datasets = []
+        self.vecs = []
+
+        self.make_datasets()
 
     def __len__(self):
         return self.num_samples
 
     def __getitem__(self, idx):
         return self.datasets[idx]
+
+    def get_vec(self, idx):
+        return self.vecs[idx]
 
     def make_each_dataset(self):
         # 각 꼭짓점의 각도를 무작위로 생성
@@ -35,6 +43,12 @@ class PolygonDataset(Dataset):
             (math.cos(angle) * radius + center, math.sin(angle) * radius + center)
             for angle in angles
         ])
+
+        # 결과에 해당할 것으로 예상되는 벡터 - label 로 사용
+        polygon = Polygon(vertices)
+        coords = polygon.minimum_rotated_rectangle.exterior.coords
+        vecs = [(coords[i + 1][0] - coord[0], coords[i + 1][1] - coord[1]) for i, coord in enumerate(coords[:-1])]
+        vec = [vec for vec in vecs if vec[0] > 0 and vec[1] > 0][0]
 
         # 이미지 생성
         img = np.zeros((self.img_size, self.img_size))
@@ -50,12 +64,13 @@ class PolygonDataset(Dataset):
         # PyTorch Tensor로 변환
         img_tensor = torch.tensor(img, dtype=torch.float32)
         img_tensor = img_tensor.unsqueeze(0)  # 채널 차원 추가
-        return img_tensor
+        return img_tensor, vec
 
     def make_datasets(self):
-        return [
-            self.make_each_dataset() for _ in range(self.num_samples)
-        ]
+        for _ in range(self.num_samples):
+            img_tensor, vec = self.make_each_dataset()
+            self.datasets.append(img_tensor)
+            self.vecs.append(vec)
 
 # CNN 모델 정의
 class CNN(nn.Module):
@@ -90,19 +105,27 @@ def visualize_polygon_dataset(dataset, num_images=5):
         img_tensor = dataset[i]  # 데이터셋에서 이미지 텐서 가져오기
         img = img_tensor.squeeze().numpy()  # 채널 차원 제거 및 NumPy 배열로 변환
         axes[i].imshow(img, cmap='gray')  # 이미지 표시
+
+        # 이미지 위에 선분으로 VEC를 표시
+        vec = dataset.get_vec(i)
+        axes[i].plot([0, vec[0]], [0, vec[1]], color='red')
+
         axes[i].axis('off')  # 축 레이블 제거
     plt.show()
 
 # 데이터셋 인스턴스 생성
 dataset = PolygonDataset()
+batch_size = 128
 
 # 시각화 함수 호출
-visualize_polygon_dataset(dataset, num_images=dataset.img_size)
+visualize_polygon_dataset(dataset, num_images=batch_size)
 
-dataloader = DataLoader(dataset, batch_size=32, shuffle=True)
+# 데이터 및 라벨 불러오기
+dataloader = DataLoader(dataset, batch_size=batch_size, shuffle=False)
+labels = torch.tensor([dataset.get_vec(i) for i in range(batch_size)])  # FIXME: dataloader 자체에 적용
 
 # 학습
-num_epochs = 10
+num_epochs = 100
 for epoch in range(num_epochs):
     running_loss = 0.0
     for i, data in enumerate(dataloader, 0):
@@ -111,19 +134,13 @@ for epoch in range(num_epochs):
 
         outputs = model(inputs)
 
-        # 실제 레이블 데이터가 필요합니다. 여기서는 예시로 outputs와 동일한 크기의 무작위 데이터를 사용합니다.
-        # 실제 사용 시에는 적절한 레이블 데이터를 제공해야 합니다.
-        labels = torch.rand_like(outputs)  # 예시 레이블 데이터 생성
-
         loss = criterion(outputs, labels)  # 실제 레이블을 사용하여 손실 계산
 
         loss.backward()
         optimizer.step()
 
         running_loss += loss.item()
-        # if i % 100 == 99:  # 100 미니배치마다 출력
-        print('[%d, %5d] loss: %.3f' %
-                (epoch + 1, i + 1, running_loss / 100))
-        running_loss = 0.0
+
+    print('[%d] loss: %.3f' %  (epoch + 1, running_loss / 100))
 
 print('Finished Training')
