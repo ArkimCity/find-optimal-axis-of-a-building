@@ -32,6 +32,12 @@ class PolygonDataset(Dataset):
     def get_vec(self, idx):
         return self.vecs[idx]
 
+    def normalize_vector(self, vec):
+        length = np.linalg.norm(vec)
+        if length == 0:
+            return vec
+        return vec / length
+
     def make_each_dataset(self):
         # 각 꼭짓점의 각도를 무작위로 생성
         angles = np.sort(np.random.rand(self.num_vertices) * 2 * math.pi)
@@ -48,7 +54,9 @@ class PolygonDataset(Dataset):
         polygon = Polygon(vertices)
         coords = polygon.minimum_rotated_rectangle.exterior.coords
         vecs = [(coords[i + 1][0] - coord[0], coords[i + 1][1] - coord[1]) for i, coord in enumerate(coords[:-1])]
-        vec = [vec for vec in vecs if vec[0] > 0 and vec[1] > 0][0]
+        vec_raw = [vec for vec in vecs if vec[0] > 0 and vec[1] > 0][0]
+        vec_length = np.linalg.norm(vec_raw)
+        vec = tuple(float(x / vec_length) for x in vec_raw)
 
         # 이미지 생성
         img = np.zeros((self.img_size, self.img_size))
@@ -108,7 +116,7 @@ def visualize_polygon_dataset(dataset, num_images=5):
 
         # 이미지 위에 선분으로 VEC를 표시
         vec = dataset.get_vec(i)
-        axes[i].plot([0, vec[0]], [0, vec[1]], color='red')
+        axes[i].plot([0, vec[0] * 10], [0, vec[1] * 10], color='red')
 
         axes[i].axis('off')  # 축 레이블 제거
     plt.show()
@@ -118,7 +126,7 @@ dataset = PolygonDataset()
 batch_size = 128
 
 # 시각화 함수 호출
-visualize_polygon_dataset(dataset, num_images=batch_size)
+visualize_polygon_dataset(dataset, num_images=10)
 
 # 데이터 및 라벨 불러오기
 dataloader = DataLoader(dataset, batch_size=batch_size, shuffle=False)
