@@ -167,7 +167,7 @@ print('Finished Training')
 # 테스트
 result_vecs = []
 for test_data in dataset.test_datasets:
-    result_vec = model(test_data)
+    result_vec = model(test_data.unsqueeze(0))
     result_vecs.append((float(result_vec[0][0]), float(result_vec[0][1])))
 
 visualize_polygon_dataset(dataset.test_datasets, result_vecs, dataset.test_vecs, num_images=10)
