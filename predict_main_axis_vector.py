@@ -54,8 +54,9 @@ class PolygonDataset(Dataset):
         coords = polygon.minimum_rotated_rectangle.exterior.coords
         vecs = [(coords[i + 1][0] - coord[0], coords[i + 1][1] - coord[1]) for i, coord in enumerate(coords[:-1])]
         vec_raw = [vec for vec in vecs if vec[0] > 0 and vec[1] > 0][0]
-        vec_length = np.linalg.norm(vec_raw)
-        vec = tuple(float(x / vec_length) for x in vec_raw)
+        vec = vec_raw
+        # vec_length = np.linalg.norm(vec_raw)
+        # vec = tuple(float(x / vec_length) for x in vec_raw)
 
         # 이미지 생성
         img = np.zeros((self.img_size, self.img_size))
@@ -116,10 +117,10 @@ def visualize_polygon_dataset(img_tensors, vecs, comparison_vecs, num_images=5):
 
         # 이미지 위에 선분으로 VEC를 표시
         vec = vecs[i]
-        axes[i].plot([0, vec[0] * img_tensor.size()[1]], [0, vec[1] * img_tensor.size()[1]], color='red')
+        axes[i].plot([0, vec[0]], [0, vec[1]], color='red')
 
         comparison_vec = comparison_vecs[i]
-        axes[i].plot([0, comparison_vec[0] * img_tensor.size()[1]], [0, comparison_vec[1] * img_tensor.size()[1]], color='green')
+        axes[i].plot([0, comparison_vec[0]], [0, comparison_vec[1]], color='green')
 
         axes[i].axis('off')  # 축 레이블 제거
     plt.show()
@@ -141,10 +142,12 @@ batch_size = 128
 
 # 데이터 및 라벨 불러오기
 dataloader = DataLoader(dataset, batch_size=batch_size, shuffle=False)
-labels = torch.tensor([dataset.get_vec(i) for i in range(batch_size)])  # FIXME: dataloader 자체에 적용
+all_labels = [
+    torch.tensor([dataset.get_vec(i * batch_size + j) for j in range(batch_size)]) for i in range(8)
+]  # FIXME: dataloader 자체에 적용
 
 # 학습
-num_epochs = 100
+num_epochs = 1000
 for epoch in range(num_epochs):
     running_loss = 0.0
     for i, data in enumerate(dataloader, 0):
@@ -153,7 +156,7 @@ for epoch in range(num_epochs):
 
         outputs = model(inputs)
 
-        loss = criterion(outputs, labels)  # 실제 레이블을 사용하여 손실 계산
+        loss = criterion(outputs, all_labels[i])  # 실제 레이블을 사용하여 손실 계산
 
         loss.backward()
         optimizer.step()
