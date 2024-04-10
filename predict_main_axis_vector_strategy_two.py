@@ -1,8 +1,12 @@
+import json
 import torch
 import torch.nn as nn
 import torch.optim as optim
-import numpy as np
 import matplotlib.pyplot as plt
+from shapely.geometry import Polygon
+
+with open("data/buildings_data_divided/196164.22754000025_449303.8666800002_196905.28352000023_451480.8424600002.json", "r") as f:
+    BUILDINGS_DATA_JSON = json.load(f)
 
 
 class DirectionPredictionModel(nn.Module):
@@ -20,26 +24,35 @@ class DirectionPredictionModel(nn.Module):
         out = self.fc(out[:, -1, :])
         return out
 
+
 # 폴리곤의 메인 방향성을 계산하는 함수 - FIXME: obb 의 값을 사용할 예정입니다.
 def calculate_main_direction(points):
-    return points[-1] - points[0]
 
-# 데이터셋 생성 함수
-def generate_dataset(num_samples, max_num_points):
+    polygon = Polygon(points)
+    coords = polygon.minimum_rotated_rectangle.exterior.coords
+    vecs = [(coords[i + 1][0] - coord[0], coords[i + 1][1] - coord[1]) for i, coord in enumerate(coords[:-1])]
+    vec = [vec for vec in vecs if vec[0] > 0 and vec[1] > 0][0]
+
+    return torch.tensor(vec)
+
+
+def generate_dataset(start_index, num_samples):
     dataset = []
     labels = []
-    for _ in range(num_samples):
-        # 랜덤한 점 개수 선택 (3에서 max_num_points 사이)
-        num_points = np.random.randint(3, max_num_points + 1)
-        # 랜덤한 점 좌표로 폴리곤 생성
-        points = torch.rand(num_points, 2) * 10  # 0에서 10 사이의 랜덤 좌표
+
+    for i in range(start_index, num_samples):
+        raw_points = BUILDINGS_DATA_JSON["features"][i]["geometry"]["coordinates"][0]
+
+        points = torch.tensor(raw_points)
         dataset.append(points)
+
         # 폴리곤의 메인 방향성 계산
         main_direction = calculate_main_direction(points)
         labels.append(main_direction)
+
     return dataset, labels
 
-# 시각화 함수
+
 def visualize_results(test_cases, predictions):
     plt.figure(figsize=(12, 8))
     for i in range(len(test_cases)):
@@ -59,9 +72,10 @@ def visualize_results(test_cases, predictions):
 if __name__ == "__main__":
     # 데이터셋 생성
     num_samples = 128
+    num_tests = 16
     max_num_points = 10  # 최대 점 개수 설정
-    train_dataset, train_labels = generate_dataset(num_samples, max_num_points)
-    test_cases, _ = generate_dataset(16, max_num_points)
+    train_dataset, train_labels = generate_dataset(0, num_samples)
+    test_cases, _ = generate_dataset(num_samples, num_tests)
 
     # 모델 초기화
     input_dim = 2  # 입력은 2차원 좌표
