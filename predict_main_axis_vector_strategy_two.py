@@ -55,47 +55,49 @@ def visualize_results(test_cases, predictions):
     plt.grid(True)
     plt.show()
 
-# 데이터셋 생성
-num_samples = 128
-max_num_points = 10  # 최대 점 개수 설정
-train_dataset, train_labels = generate_dataset(num_samples, max_num_points)
-test_cases, _ = generate_dataset(16, max_num_points)
 
-# 모델 초기화
-input_dim = 2  # 입력은 2차원 좌표
-hidden_dim = 16  # LSTM의 hidden state 차원
-output_dim = 2  # 출력은 2차원 벡터 (방향성)
+if __name__ == "__main__":
+    # 데이터셋 생성
+    num_samples = 128
+    max_num_points = 10  # 최대 점 개수 설정
+    train_dataset, train_labels = generate_dataset(num_samples, max_num_points)
+    test_cases, _ = generate_dataset(16, max_num_points)
 
-model = DirectionPredictionModel(input_dim, hidden_dim, output_dim)
+    # 모델 초기화
+    input_dim = 2  # 입력은 2차원 좌표
+    hidden_dim = 16  # LSTM의 hidden state 차원
+    output_dim = 2  # 출력은 2차원 벡터 (방향성)
 
-# 손실 함수와 옵티마이저 설정
-criterion = nn.MSELoss()
-optimizer = optim.Adam(model.parameters(), lr=0.001)
+    model = DirectionPredictionModel(input_dim, hidden_dim, output_dim)
 
-# 학습
-num_epochs = 1000
-for epoch in range(num_epochs):
-    total_loss = 0.0
-    for i in range(len(train_dataset)):
-        optimizer.zero_grad()
+    # 손실 함수와 옵티마이저 설정
+    criterion = nn.MSELoss()
+    optimizer = optim.Adam(model.parameters(), lr=0.001)
 
-        output = model(train_dataset[i].unsqueeze(0))  # 배치 차원을 추가하여 모델 입력 형태로 변환
-        label = train_labels[i].unsqueeze(0)
+    # 학습
+    num_epochs = 1000
+    for epoch in range(num_epochs):
+        total_loss = 0.0
+        for i, train_data in enumerate(train_dataset):
+            optimizer.zero_grad()
 
-        loss = criterion(output, label)
-        total_loss += loss.item()
+            output = model(train_data.unsqueeze(0))  # 배치 차원을 추가하여 모델 입력 형태로 변환
+            label = train_labels[i].unsqueeze(0)
 
-        loss.backward()
-        optimizer.step()
+            loss = criterion(output, label)
+            total_loss += loss.item()
 
-    if (epoch+1) % 100 == 0:
-        print(f'Epoch [{epoch+1}/{num_epochs}], Loss: {total_loss/len(train_dataset):.4f}')
+            loss.backward()
+            optimizer.step()
 
-# 테스트 케이스 실행
-predictions = []
-for points in test_cases:
-    pred_direction = model(points.unsqueeze(0)).detach().numpy()
-    predictions.append(pred_direction)
+        if (epoch+1) % 100 == 0:
+            print(f'Epoch [{epoch+1}/{num_epochs}], Loss: {total_loss/len(train_dataset):.4f}')
 
-# 결과 시각화
-# visualize_results(test_cases, predictions)
+    # 테스트 케이스 실행
+    predictions = []
+    for points in test_cases:
+        pred_direction = model(points.unsqueeze(0)).detach().numpy()
+        predictions.append(pred_direction)
+
+    # 결과 시각화
+    visualize_results(test_cases, predictions)
