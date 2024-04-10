@@ -64,20 +64,35 @@ def generate_dataset(start_index, num_samples):
 
 
 def visualize_results(test_cases, predictions):
-    plt.figure(figsize=(12, 8))
-    for i in range(len(test_cases)):
+    num_test_cases = len(test_cases)
+    num_cols = 4  # Number of columns for subplots (adjust as needed)
+    num_rows = (num_test_cases + num_cols - 1) // num_cols  # Calculate number of rows
+
+    plt.figure(figsize=(5 * num_cols, 5 * num_rows))  # Adjust figure size based on the number of subplots
+
+    for i in range(num_test_cases):
         points = test_cases[i]
         pred_direction = predictions[i]
+
+        # Create a subplot for each test case
+        plt.subplot(num_rows, num_cols, i + 1)
         plt.plot(points[:, 0], points[:, 1], 'b-')
         plt.scatter(points[:, 0], points[:, 1], color='r')
-        plt.arrow(points[0][0], points[0][1], pred_direction[0], pred_direction[1], head_width=0.5, head_length=0.5, fc='g', ec='g')
 
-    plt.title("Predicted Main Directions of Test Cases")
-    plt.xlabel("X")
-    plt.ylabel("Y")
-    plt.grid(True)
+        # obb로부터 생성한 (lable 로 주어진 것과 같은 로직의) direction plot
+        calculated_direction = calculate_main_direction(points)
+        plt.arrow(points[0][0], points[0][1], calculated_direction[0], calculated_direction[1], head_width=0.5, head_length=0.5, fc='r', ec='r')
+
+        # model 이 predict 한 direction plot
+        plt.arrow(points[0][0], points[0][1], pred_direction[0][0], pred_direction[0][1], head_width=0.5, head_length=0.5, fc='g', ec='g')
+
+        plt.title(f"Test Case {i+1}")
+        plt.xlabel("X")
+        plt.ylabel("Y")
+        plt.grid(True)
+
+    plt.tight_layout()  # Adjust subplot layout to prevent overlap
     plt.show()
-
 
 if __name__ == "__main__":
     # 데이터셋 생성
@@ -85,7 +100,7 @@ if __name__ == "__main__":
     num_tests = 16
     max_num_points = 10  # 최대 점 개수 설정
     train_dataset, train_labels = generate_dataset(0, num_samples)
-    test_cases, _ = generate_dataset(num_samples, num_tests)
+    test_cases, _ = generate_dataset(num_samples, num_samples + num_tests)
 
     # 모델 초기화
     input_dim = 2  # 입력은 2차원 좌표
