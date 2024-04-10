@@ -3,6 +3,7 @@ import torch
 import torch.nn as nn
 import torch.optim as optim
 import matplotlib.pyplot as plt
+import shapely.affinity
 from shapely.geometry import Polygon
 
 with open("data/buildings_data_divided/196164.22754000025_449303.8666800002_196905.28352000023_451480.8424600002.json", "r") as f:
@@ -43,11 +44,20 @@ def generate_dataset(start_index, num_samples):
     for i in range(start_index, num_samples):
         raw_points = BUILDINGS_DATA_JSON["features"][i]["geometry"]["coordinates"][0]
 
-        points = torch.tensor(raw_points)
+        polygon = Polygon(raw_points)
+        # centroid 위치를 향해. polygon data normalize 개념
+        polygon_translated = shapely.affinity.translate(polygon, -polygon.centroid.coords[0][0], -polygon.centroid.coords[0][1])
+
+        points = torch.tensor(polygon_translated.exterior.coords)
         dataset.append(points)
 
         # 폴리곤의 메인 방향성 계산
         main_direction = calculate_main_direction(points)
+
+        # NOTE: 실제 필지의 크기가 서로 다른데, 결과 vector 를 normalize 하는 것이 맞다는 확신을 아직 가지지 못함
+        # main_direction_length = torch.norm(main_direction, p=2)
+        # main_direction_normalized = main_direction / main_direction_length
+
         labels.append(main_direction)
 
     return dataset, labels
