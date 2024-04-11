@@ -98,7 +98,6 @@ if __name__ == "__main__":
     # 데이터셋 생성
     num_samples = 512
     num_tests = 16
-    max_num_points = 10  # 최대 점 개수 설정
     train_dataset, train_labels = generate_dataset(0, num_samples)
     test_cases, _ = generate_dataset(num_samples, num_samples + num_tests)
 
