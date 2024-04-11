@@ -32,7 +32,7 @@ def calculate_main_direction(points):
     polygon = Polygon(points)
     coords = polygon.minimum_rotated_rectangle.exterior.coords
     vecs = [(coords[i + 1][0] - coord[0], coords[i + 1][1] - coord[1]) for i, coord in enumerate(coords[:-1])]
-    vec = [vec for vec in vecs if vec[0] > 0 and vec[1] > 0][0]
+    vec = [vec for vec in vecs if vec[0] >= 0 and vec[1] > 0][0]
 
     return torch.tensor(vec)
 
@@ -96,7 +96,7 @@ def visualize_results(test_cases, predictions):
 
 if __name__ == "__main__":
     # 데이터셋 생성
-    num_samples = 128
+    num_samples = 512
     num_tests = 16
     max_num_points = 10  # 최대 점 개수 설정
     train_dataset, train_labels = generate_dataset(0, num_samples)
