@@ -1,7 +1,9 @@
 import cv2
 import math
+import json
 import numpy as np
 import matplotlib.pyplot as plt
+import shapely.affinity
 from shapely.geometry import Polygon
 
 import torch
@@ -9,6 +11,7 @@ import torch.nn as nn
 import torch.optim as optim
 import torchvision.transforms as transforms
 from torch.utils.data import DataLoader, Dataset
+import debugvisualizer as dv
 
 np.random.seed(12)
 
@@ -19,14 +22,13 @@ class PolygonDataset(Dataset):
         self.num_test_samples = 128
         self.num_vertices = num_vertices
         self.img_size = img_size
-        self.datasets = []
-        self.vecs = []
 
-        self.test_datasets = []
-        self.test_vecs = []
+        with open("data/buildings_data_divided/196164.22754000025_449303.8666800002_196905.28352000023_451480.8424600002.json", "r") as f:
+            self.buildings_data_json = json.load(f)
 
-        self.make_datasets(self.num_samples, is_test=False)
-        self.make_datasets(self.num_test_samples, is_test=True)
+        self.datasets, self.vecs = self.make_datasets(0, self.num_samples)
+        self.test_datasets, self.test_vecs = self.make_datasets(self.num_samples, self.num_samples + self.num_test_samples)
+
 
     def __len__(self):
         return self.num_samples
@@ -37,53 +39,57 @@ class PolygonDataset(Dataset):
     def get_vec(self, idx):
         return self.vecs[idx]
 
-    def make_each_dataset(self):
-        # 각 꼭짓점의 각도를 무작위로 생성
-        angles = np.sort(np.random.rand(self.num_vertices) * 2 * math.pi)
-        radius = self.img_size / 2 - 1  # 원의 반지름 설정
-        center = self.img_size / 2  # 이미지 중앙을 원의 중심으로 설정
+    def normalize_coordinates(self, vertices):
+        # 다각형의 좌표를 [0, 1] 범위로 정규화
+        vertices = np.array(vertices)
+        min_coords = vertices.min(axis=0)
+        max_coords = vertices.max(axis=0)
+        normalized_vertices = (vertices - min_coords) / (max_coords - min_coords)
 
-        # 원의 주위에 꼭짓점 배치
-        vertices = np.array([
-            (math.cos(angle) * radius + center, math.sin(angle) * radius + center)
-            for angle in angles
-        ])
+        # 이미지 크기에 맞게 좌표 조정 (32x32 이미지 기준)
+        scaled_vertices = normalized_vertices * (self.img_size - 1)
+
+        return scaled_vertices
+
+    def make_each_dataset(self, vertices_raw):
+
+        vertices = self.normalize_coordinates(vertices_raw)
 
         # 결과에 해당할 것으로 예상되는 벡터 - label 로 사용
         polygon = Polygon(vertices)
-        coords = polygon.minimum_rotated_rectangle.exterior.coords
+        polygon_translated = shapely.affinity.translate(polygon, -polygon.bounds[0] + 0.1, -polygon.bounds[1] + 0.1)
+
+        vertices = np.array(polygon_translated.exterior.coords)
+
+        coords = polygon_translated.minimum_rotated_rectangle.exterior.coords
         vecs = [(coords[i + 1][0] - coord[0], coords[i + 1][1] - coord[1]) for i, coord in enumerate(coords[:-1])]
-        vec_raw = [vec for vec in vecs if vec[0] > 0 and vec[1] > 0][0]
+        vec_raw = [vec for vec in vecs if vec[0] >= 0 and vec[1] > 0][0]
         vec = vec_raw
         # vec_length = np.linalg.norm(vec_raw)
         # vec = tuple(float(x / vec_length) for x in vec_raw)
 
         # 이미지 생성
         img = np.zeros((self.img_size, self.img_size))
-        for i in range(self.num_vertices - 1):
+        for i in range(len(vertices) - 1):
             pt1 = tuple((vertices[i]).astype(int))
             pt2 = tuple((vertices[i + 1]).astype(int))
             cv2.line(img, pt1, pt2, color=1, thickness=1)
-        # 마지막 점과 첫 번째 점을 연결
-        pt1 = tuple((vertices[self.num_vertices - 1]).astype(int))
-        pt2 = tuple((vertices[0]).astype(int))
-        cv2.line(img, pt1, pt2, color=1, thickness=1)
 
         # PyTorch Tensor로 변환
         img_tensor = torch.tensor(img, dtype=torch.float32)
         img_tensor = img_tensor.unsqueeze(0)  # 채널 차원 추가
         return img_tensor, vec
 
-    def make_datasets(self, num_samples, is_test):
-        for _ in range(num_samples):
-            img_tensor, vec = self.make_each_dataset()
+    def make_datasets(self, start_index, end_index):
+        img_tensors, vecs = [], []
+        for i in range(start_index, end_index):
+            vertices = self.buildings_data_json["features"][i]["geometry"]["coordinates"][0]
+            img_tensor, vec = self.make_each_dataset(vertices)
 
-            if is_test:
-                self.test_datasets.append(img_tensor)
-                self.test_vecs.append(vec)
-            else:
-                self.datasets.append(img_tensor)
-                self.vecs.append(vec)
+            img_tensors.append(img_tensor)
+            vecs.append(vec)
+
+        return img_tensors, vecs
 
 # CNN 모델 정의
 class CNN(nn.Module):
@@ -163,7 +169,8 @@ for epoch in range(num_epochs):
 
         running_loss += loss.item()
 
-    print('[%d] loss: %.3f' %  (epoch + 1, running_loss / 100))
+    if (epoch+1) % 100 == 0:
+        print('[%d] loss: %.3f' %  (epoch + 1, running_loss / 100))
 
 print('Finished Training')
 
