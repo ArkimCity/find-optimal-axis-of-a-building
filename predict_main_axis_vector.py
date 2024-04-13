@@ -17,10 +17,9 @@ np.random.seed(12)
 
 # 가상의 데이터셋 생성
 class PolygonDataset(Dataset):
-    def __init__(self, num_samples=1024, num_vertices=6, img_size=32):
+    def __init__(self, num_samples, num_test_samples, img_size):
         self.num_samples = num_samples
-        self.num_test_samples = 128
-        self.num_vertices = num_vertices
+        self.num_test_samples = num_test_samples
         self.img_size = img_size
 
         with open("data/buildings_data_divided/196164.22754000025_449303.8666800002_196905.28352000023_451480.8424600002.json", "r") as f:
@@ -111,24 +110,26 @@ class CNN(nn.Module):
         return x
 
 
-# PolygonDataset 인스턴스 시각화 함수
-def visualize_polygon_dataset(img_tensors, vecs, comparison_vecs, num_images=5):
-
-    fig, axes = plt.subplots(1, num_images, figsize=(num_images * 3, 3))
+def visualize_polygon_dataset(img_tensors, vecs, comparison_vecs, num_images=64):
+    num_rows = num_images // 8  # 8개씩 8줄로 나누기
+    fig, axes = plt.subplots(num_rows, 8, figsize=(16, 2*num_rows))  # 그림판 생성
 
     for i in range(num_images):
-        img_tensor = img_tensors[i]  # 데이터셋에서 이미지 텐서 가져오기
-        img = img_tensor.squeeze().numpy()  # 채널 차원 제거 및 NumPy 배열로 변환
-        axes[i].imshow(img, cmap='gray')  # 이미지 표시
+        row = i // 8
+        col = i % 8
 
-        # 이미지 위에 선분으로 VEC를 표시
+        img_tensor = img_tensors[i].squeeze().numpy()  # 이미지 텐서 가져오기
+        axes[row, col].imshow(img_tensor, cmap='gray')  # 이미지 표시
+
+        # 이미지 위에 벡터들을 선분으로 표시
         vec = vecs[i]
-        axes[i].plot([0, vec[0]], [0, vec[1]], color='red')
+        axes[row, col].plot([0, vec[0]], [0, vec[1]], color='red')  # 빨간색 벡터
 
         comparison_vec = comparison_vecs[i]
-        axes[i].plot([0, comparison_vec[0]], [0, comparison_vec[1]], color='green')
+        axes[row, col].plot([0, comparison_vec[0]], [0, comparison_vec[1]], color='green')  # 초록색 벡터
 
-        axes[i].axis('off')  # 축 레이블 제거
+        axes[row, col].axis('off')  # 축 레이블 제거
+
     plt.show()
 
 
@@ -140,8 +141,12 @@ criterion = nn.MSELoss()  # 회귀 문제 사용할 손실 함수
 optimizer = optim.Adam(model.parameters(), lr=0.001)
 
 # 데이터셋 인스턴스 생성
-dataset = PolygonDataset()
+num_samples = 1024
+num_test_samples = 64
+img_size = 32  # 32 * 32 픽셀 처럼 표현 해상도 결정
+dataset = PolygonDataset(num_samples=num_samples, num_test_samples=num_test_samples, img_size=img_size)
 batch_size = 128
+batch_counts = 8
 
 # 시각화 함수 호출
 # visualize_polygon_dataset(dataset.datasets, dataset.vecs, dataset.vecs, num_images=10)
@@ -149,7 +154,7 @@ batch_size = 128
 # 데이터 및 라벨 불러오기
 dataloader = DataLoader(dataset, batch_size=batch_size, shuffle=False)
 all_labels = [
-    torch.tensor([dataset.get_vec(i * batch_size + j) for j in range(batch_size)]) for i in range(8)
+    torch.tensor([dataset.get_vec(i * batch_size + j) for j in range(batch_size)]) for i in range(batch_counts)
 ]  # FIXME: dataloader 자체에 적용
 
 # 학습
@@ -180,4 +185,4 @@ for test_data in dataset.test_datasets:
     result_vec = model(test_data.unsqueeze(0))
     result_vecs.append((float(result_vec[0][0]), float(result_vec[0][1])))
 
-visualize_polygon_dataset(dataset.test_datasets, result_vecs, dataset.test_vecs, num_images=10)
+visualize_polygon_dataset(dataset.test_datasets, result_vecs, dataset.test_vecs, num_images=num_test_samples)
