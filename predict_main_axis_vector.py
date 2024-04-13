@@ -133,56 +133,57 @@ def visualize_polygon_dataset(img_tensors, vecs, comparison_vecs, num_images=64)
     plt.show()
 
 
-# 모델 초기화
-model = CNN()
+if __name__ == "__main__":
+    # 모델 초기화
+    model = CNN()
 
-# 손실 함수 및 옵티마이저 정의
-criterion = nn.MSELoss()  # 회귀 문제 사용할 손실 함수
-optimizer = optim.Adam(model.parameters(), lr=0.001)
+    # 손실 함수 및 옵티마이저 정의
+    criterion = nn.MSELoss()  # 회귀 문제 사용할 손실 함수
+    optimizer = optim.Adam(model.parameters(), lr=0.001)
 
-# 데이터셋 인스턴스 생성
-num_samples = 1024
-num_test_samples = 64
-img_size = 32  # 32 * 32 픽셀 처럼 표현 해상도 결정
-dataset = PolygonDataset(num_samples=num_samples, num_test_samples=num_test_samples, img_size=img_size)
-batch_size = 128
-batch_counts = 8
+    # 데이터셋 인스턴스 생성
+    num_samples = 1024
+    num_test_samples = 64
+    img_size = 32  # 32 * 32 픽셀 처럼 표현 해상도 결정
+    dataset = PolygonDataset(num_samples=num_samples, num_test_samples=num_test_samples, img_size=img_size)
+    batch_size = 128
+    batch_counts = 8
 
-# 시각화 함수 호출
-# visualize_polygon_dataset(dataset.datasets, dataset.vecs, dataset.vecs, num_images=10)
+    # 시각화 함수 호출
+    # visualize_polygon_dataset(dataset.datasets, dataset.vecs, dataset.vecs, num_images=10)
 
-# 데이터 및 라벨 불러오기
-dataloader = DataLoader(dataset, batch_size=batch_size, shuffle=False)
-all_labels = [
-    torch.tensor([dataset.get_vec(i * batch_size + j) for j in range(batch_size)]) for i in range(batch_counts)
-]  # FIXME: dataloader 자체에 적용
+    # 데이터 및 라벨 불러오기
+    dataloader = DataLoader(dataset, batch_size=batch_size, shuffle=False)
+    all_labels = [
+        torch.tensor([dataset.get_vec(i * batch_size + j) for j in range(batch_size)]) for i in range(batch_counts)
+    ]  # FIXME: dataloader 자체에 적용
 
-# 학습
-num_epochs = 1000
-for epoch in range(num_epochs):
-    running_loss = 0.0
-    for i, data in enumerate(dataloader, 0):
-        inputs = data
-        optimizer.zero_grad()
+    # 학습
+    num_epochs = 1000
+    for epoch in range(num_epochs):
+        running_loss = 0.0
+        for i, data in enumerate(dataloader, 0):
+            inputs = data
+            optimizer.zero_grad()
 
-        outputs = model(inputs)
+            outputs = model(inputs)
 
-        loss = criterion(outputs, all_labels[i])  # 실제 레이블을 사용하여 손실 계산
+            loss = criterion(outputs, all_labels[i])  # 실제 레이블을 사용하여 손실 계산
 
-        loss.backward()
-        optimizer.step()
+            loss.backward()
+            optimizer.step()
 
-        running_loss += loss.item()
+            running_loss += loss.item()
 
-    if (epoch+1) % 100 == 0:
-        print('[%d] loss: %.3f' %  (epoch + 1, running_loss / 100))
+        if (epoch+1) % 100 == 0:
+            print('[%d] loss: %.3f' %  (epoch + 1, running_loss / 100))
 
-print('Finished Training')
+    print('Finished Training')
 
-# 테스트
-result_vecs = []
-for test_data in dataset.test_datasets:
-    result_vec = model(test_data.unsqueeze(0))
-    result_vecs.append((float(result_vec[0][0]), float(result_vec[0][1])))
+    # 테스트
+    result_vecs = []
+    for test_data in dataset.test_datasets:
+        result_vec = model(test_data.unsqueeze(0))
+        result_vecs.append((float(result_vec[0][0]), float(result_vec[0][1])))
 
-visualize_polygon_dataset(dataset.test_datasets, result_vecs, dataset.test_vecs, num_images=num_test_samples)
+    visualize_polygon_dataset(dataset.test_datasets, result_vecs, dataset.test_vecs, num_images=num_test_samples)
