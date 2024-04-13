@@ -96,7 +96,7 @@ class CNN(nn.Module):
         super(CNN, self).__init__()
         self.conv1 = nn.Conv2d(1, 16, kernel_size=3, padding=1)
         self.conv2 = nn.Conv2d(16, 32, kernel_size=3, padding=1)
-        self.fc1 = nn.Linear(32 * 16 * 16, 128)
+        self.fc1 = nn.Linear(32 * 8 * 8, 128)
         self.fc2 = nn.Linear(128, 2)  # 2차원으로 출력 (가장 지배적인 축의 방향)
 
     def forward(self, x):
@@ -104,7 +104,7 @@ class CNN(nn.Module):
         x = torch.max_pool2d(x, kernel_size=2, stride=2)
         x = torch.relu(self.conv2(x))
         x = torch.max_pool2d(x, kernel_size=2, stride=2)
-        x = x.view(-1, 32 * 16 * 16)
+        x = x.view(-1, 32 * 8 * 8)
         x = torch.relu(self.fc1(x))
         x = self.fc2(x)
         return x
@@ -143,7 +143,7 @@ optimizer = optim.Adam(model.parameters(), lr=0.001)
 # 데이터셋 인스턴스 생성
 num_samples = 1024
 num_test_samples = 64
-img_size = 64  # 64 * 64 픽셀 처럼 표현 해상도 결정
+img_size = 32  # 32 * 32 픽셀 처럼 표현 해상도 결정
 dataset = PolygonDataset(num_samples=num_samples, num_test_samples=num_test_samples, img_size=img_size)
 batch_size = 128
 batch_counts = 8
