@@ -1,4 +1,5 @@
 torch
+torchvision
 torch_geometric
 plotly
 shapely
