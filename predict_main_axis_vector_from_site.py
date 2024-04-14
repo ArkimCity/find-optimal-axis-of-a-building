@@ -162,8 +162,8 @@ if __name__ == "__main__":
     num_test_samples = 64
     img_size = 32  # 32 * 32 픽셀 처럼 표현 해상도 결정
     dataset = PolygonDataset(num_samples=num_samples, num_test_samples=num_test_samples, img_size=img_size)
-    batch_size = 128
-    batch_counts = 8
+    batch_size = num_samples
+    batch_counts = 1
 
     # 시각화 함수 호출
     # visualize_polygon_dataset(dataset.datasets, dataset.vecs, dataset.vecs, num_images=10)
