@@ -5,6 +5,7 @@ import numpy as np
 import matplotlib.pyplot as plt
 import shapely.affinity
 from shapely.geometry import Polygon
+from json import JSONEncoder
 
 import torch
 import torch.nn as nn
@@ -15,7 +16,14 @@ import debugvisualizer as dv
 
 np.random.seed(12)
 
-# 가상의 데이터셋 생성
+
+class EncodeTensor(JSONEncoder,Dataset):
+    def default(self, obj):
+        if isinstance(obj, torch.Tensor):
+            return obj.cpu().detach().numpy().tolist()
+        return super(EncodeTensor, self).default(obj)
+
+
 class PolygonDataset(Dataset):
     def __init__(self, num_samples, num_test_samples, img_size):
         self.num_samples = num_samples
@@ -201,5 +209,12 @@ if __name__ == "__main__":
     for test_data in dataset.test_datasets:
         result_vec = model(test_data.unsqueeze(0))
         result_vecs.append((float(result_vec[0][0]), float(result_vec[0][1])))
+
+    with open('test_result.json', 'w', encoding="utf-8") as json_file:
+        json.dump({
+            "test_datsets": dataset.test_datasets,
+            "test_vecs": dataset.test_vecs,
+            "result_vecs": result_vecs,
+        }, json_file, cls=EncodeTensor)
 
     visualize_polygon_dataset(dataset.test_datasets, result_vecs, dataset.test_vecs, num_images=num_test_samples)

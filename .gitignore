@@ -154,3 +154,4 @@ cython_debug/
 
 /study
 dv.html
+test_result.json
