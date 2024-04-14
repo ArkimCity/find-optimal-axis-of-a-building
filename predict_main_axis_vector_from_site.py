@@ -1,5 +1,4 @@
 import cv2
-import math
 import json
 import numpy as np
 import matplotlib.pyplot as plt
@@ -10,11 +9,8 @@ from json import JSONEncoder
 import torch
 import torch.nn as nn
 import torch.optim as optim
-import torchvision.transforms as transforms
 from torch.utils.data import DataLoader, Dataset
 import debugvisualizer as dv
-
-np.random.seed(12)
 
 
 class EncodeTensor(JSONEncoder,Dataset):
@@ -120,7 +116,7 @@ class CNN(nn.Module):
         super(CNN, self).__init__()
         self.conv1 = nn.Conv2d(1, 16, kernel_size=3, padding=1)
         self.conv2 = nn.Conv2d(16, 32, kernel_size=3, padding=1)
-        self.fc1 = nn.Linear(32 * 16 * 16, 128)
+        self.fc1 = nn.Linear(32 * 8 * 8, 128)
         self.fc2 = nn.Linear(128, 2)  # 2차원으로 출력 (가장 지배적인 축의 방향)
 
     def forward(self, x):
@@ -128,7 +124,7 @@ class CNN(nn.Module):
         x = torch.max_pool2d(x, kernel_size=2, stride=2)
         x = torch.relu(self.conv2(x))
         x = torch.max_pool2d(x, kernel_size=2, stride=2)
-        x = x.view(-1, 32 * 16 * 16)
+        x = x.view(-1, 32 * 8 * 8)
         x = torch.relu(self.fc1(x))
         x = self.fc2(x)
         return x
@@ -136,7 +132,7 @@ class CNN(nn.Module):
 
 def visualize_polygon_dataset(img_tensors, vecs, comparison_vecs, num_images=64):
     num_rows = num_images // 8  # 8개씩 8줄로 나누기
-    fig, axes = plt.subplots(num_rows, 8, figsize=(16, 2*num_rows))  # 그림판 생성
+    _, axes = plt.subplots(num_rows, 8, figsize=(16, 2*num_rows))  # 그림판 생성
 
     for i in range(num_images):
         row = i // 8
@@ -168,13 +164,10 @@ if __name__ == "__main__":
     # 데이터셋 인스턴스 생성
     num_samples = 1024
     num_test_samples = 64
-    img_size = 64  # 64 * 64 픽셀 처럼 표현 해상도 결정
+    img_size = 32  # 32 * 32 픽셀 처럼 표현 해상도 결정
     dataset = PolygonDataset(num_samples=num_samples, num_test_samples=num_test_samples, img_size=img_size)
     batch_size = num_samples
     batch_counts = 1
-
-    # 시각화 함수 호출
-    # visualize_polygon_dataset(dataset.datasets, dataset.vecs, dataset.vecs, num_images=10)
 
     # 데이터 및 라벨 불러오기
     dataloader = DataLoader(dataset, batch_size=batch_size, shuffle=False)
