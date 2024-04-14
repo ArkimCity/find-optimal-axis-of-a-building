@@ -4,3 +4,4 @@ plotly
 shapely
 matplotlib
 vscodedebugvisualizer
+opencv-python
