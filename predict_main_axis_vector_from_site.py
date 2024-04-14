@@ -141,12 +141,13 @@ def visualize_polygon_dataset(img_tensors, vecs, comparison_vecs, num_images=64)
         img_tensor = img_tensors[i].squeeze().numpy()  # 이미지 텐서 가져오기
         axes[row, col].imshow(img_tensor, cmap='gray')  # 이미지 표시
 
+        vec_multiplier = 1
         # 이미지 위에 벡터들을 선분으로 표시
         vec = vecs[i]
-        axes[row, col].plot([0, vec[0]], [0, vec[1]], color='red')  # 빨간색 벡터
+        axes[row, col].plot([0, vec[0] * vec_multiplier], [0, vec[1] * vec_multiplier], color='red')  # 빨간색 벡터
 
         comparison_vec = comparison_vecs[i]
-        axes[row, col].plot([0, comparison_vec[0]], [0, comparison_vec[1]], color='green')  # 초록색 벡터
+        axes[row, col].plot([0, comparison_vec[0] * vec_multiplier], [0, comparison_vec[1] * vec_multiplier], color='green')  # 초록색 벡터
 
         axes[row, col].axis('off')  # 축 레이블 제거
 
