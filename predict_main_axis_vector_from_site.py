@@ -175,7 +175,7 @@ if __name__ == "__main__":
     ]  # FIXME: dataloader 자체에 적용
 
     # 학습
-    num_epochs = 1000
+    num_epochs = 2000
     for epoch in range(num_epochs):
         running_loss = 0.0
         for i, data in enumerate(dataloader, 0):
