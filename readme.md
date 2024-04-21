@@ -72,12 +72,12 @@
     - input 에 해당하는 필지 도형 데이터는 geometry 를 32 x 32 의 pixel tensor 로 구성해 사용합니다.
         - ex. 각 값은 0 or 1 입니다.
 
-            ![스크린샷 2024-04-14 오후 3.43.26.png](Can%20we%20determine%20the%20optimal%20building%20axis%20from%20th%20b05eb8e9b66e470b8400a78abadbd477/2024-04-14_%25E1%2584%258B%25E1%2585%25A9%25E1%2584%2592%25E1%2585%25AE_3.43.26.png)
+            ![스크린샷 2024-04-14 오후 3.43.26.png](Can%20we%20determine%20the%20optimal%20building%20axis%20from%20th%20b05eb8e9b66e470b8400a78abadbd477/2024-04-14_84E1A984E1AE_3.43.26.png)
 
     - output 에 해당하는 축 벡터는 해당 필지 위의 건물의 shapely 의 minimum_rotated_rectangle 의 x,y 모두 양의 방향으로 해당하는 벡터를 사용합니다.
         - ex.
 
-            ![스크린샷 2024-04-14 오후 9.37.20.png](Can%20we%20determine%20the%20optimal%20building%20axis%20from%20th%20b05eb8e9b66e470b8400a78abadbd477/2024-04-14_%25E1%2584%258B%25E1%2585%25A9%25E1%2584%2592%25E1%2585%25AE_9.37.20.png)
+            ![스크린샷 2024-04-14 오후 9.37.20.png](Can%20we%20determine%20the%20optimal%20building%20axis%20from%20th%20b05eb8e9b66e470b8400a78abadbd477/2024-04-14_84E1A984E1AE_9.37.20.png)
 
         - ps1.minimum_rotated_rectangle 의 변 중 양 벡터 자체가 항상 정답일 것이라 확신할 수는 없지만, **기존 필지의 데이터로부터 특정한 의도를 가진 축을 찾는다** 라는 실험의 컨셉에는 문제가 없을 것으로 생각해 그대로 진행했습니다.
         - ps2. vector 의 길이는 각 도형을 32 x 32 로 표현할 수 있는 크기로 노말라이즈 된 것을 사용합니다.
@@ -89,7 +89,7 @@
     - 학습 데이터와는 중복되지 않습니다.
 
 
-![스크린샷 2024-04-14 오후 3.38.31.png](Can%20we%20determine%20the%20optimal%20building%20axis%20from%20th%20b05eb8e9b66e470b8400a78abadbd477/2024-04-14_%25E1%2584%258B%25E1%2585%25A9%25E1%2584%2592%25E1%2585%25AE_3.38.31.png)
+![스크린샷 2024-04-14 오후 3.38.31.png](Can%20we%20determine%20the%20optimal%20building%20axis%20from%20th%20b05eb8e9b66e470b8400a78abadbd477/2024-04-14_84E1A984E1AE_3.38.31.png)
 
 ### 4. 실행
 
@@ -98,7 +98,7 @@
 
 ![learning.gif](Can%20we%20determine%20the%20optimal%20building%20axis%20from%20th%20b05eb8e9b66e470b8400a78abadbd477/learning.gif)
 
-![스크린샷 2024-04-14 오후 8.30.01.png](Can%20we%20determine%20the%20optimal%20building%20axis%20from%20th%20b05eb8e9b66e470b8400a78abadbd477/2024-04-14_%25E1%2584%258B%25E1%2585%25A9%25E1%2584%2592%25E1%2585%25AE_8.30.01.png)
+![스크린샷 2024-04-14 오후 8.30.01.png](Can%20we%20determine%20the%20optimal%20building%20axis%20from%20th%20b05eb8e9b66e470b8400a78abadbd477/2024-04-14_84E1A984E1AE_8.30.01.png)
 
 - 초록색은 label 생성과 같은 로직으로 만들어진 축 / 빨간색은 output 결과입니다.
 
