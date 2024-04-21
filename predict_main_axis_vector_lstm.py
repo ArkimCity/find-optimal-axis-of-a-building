@@ -26,7 +26,7 @@ class DirectionPredictionModel(nn.Module):
         return out
 
 
-# 폴리곤의 메인 방향성을 계산하는 함수 - FIXME: obb 의 값을 사용할 예정입니다.
+# 폴리곤의 메인 방향성을 계산하는 함수
 def calculate_main_direction(points):
 
     polygon = Polygon(points)
@@ -113,7 +113,7 @@ if __name__ == "__main__":
     optimizer = optim.Adam(model.parameters(), lr=0.001)
 
     # 학습
-    num_epochs = 1000
+    num_epochs = 2000
     for epoch in range(num_epochs):
         total_loss = 0.0
         for i, train_data in enumerate(train_dataset):
